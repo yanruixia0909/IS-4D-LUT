@@ -2,7 +2,7 @@
 
 > 本文档中的每个数值都能在本仓库代码中找到对应位置，可作为复现记录的
 > “Experimental Settings / Implementation Details”参考。与部分文献转述写法
-> （512×512、余弦退火、五级 8–128 编码器、256 分箱等）的差异见第 8 节。
+> （512×512、余弦退火、五级 8–128 编码器、256 分箱等）的差异见第 7 节。
 
 ---
 
@@ -71,7 +71,7 @@
 
 ```
 L_total1 = 1e-4·L_s + 10·L_m + 1.0·L_mse + 0.1·L_ssim
-L_total2 = 1.0·L_recon + 0.1·L_sc + 0.05·L_sa
+L_total2 = 1.0·L_recon + 0.1·L_sc + 0.1·L_sa
 L_total  = L_total1 + L_total2
 ```
 
@@ -115,20 +115,7 @@ L_total  = L_total1 + L_total2
 训练吞吐（batch=1、256×256、含判别器与全部 7 项损失、FP32）约 **0.16 s/次迭代**，
 故 1×10⁵ 次更新约需 **4.5 小时**（含稀疏验证会更长一些）。
 
-## 7. 已完成的训练与参考指标
-
-以 LOLv1 训练集跑 **1×10⁴** 次迭代（学习率在 8000 次后线性衰减），测试集（15 张、
-全分辨率）结果：
-
-| 指标 | 输入 | 增强后 |
-|---|---|---|
-| PSNR | 7.77 dB | **17.91 dB** |
-| SSIM | 0.1910 | **0.6855** |
-
-> 论文表格应为 1×10⁵ 次迭代的完整结果；上表仅用于说明数据管线与训练/评估流程已跑通，
-> 权重与逐图指标见 `checkpoints/lolv1/` 与 `results/lolv1_compare_final/metrics.json`。
-
-## 8. 与常见转述写法的差异（按代码修正）
+## 7. 与常见转述写法的差异（按代码修正）
 
 | 常见写法 | 本实现实际 | 说明 |
 |---|---|---|
@@ -142,7 +129,7 @@ L_total  = L_total1 + L_total2
 | 全局与局部判别器分别优化 | 两个判别器**共用一个 Adam**（参数合并） | 学习率与调度仍与生成网络一致 |
 | 效率测试 50 预热 + 200 次 + mean/std | 已实现于 `tools/benchmark.py`（CUDA 事件计时） | 见第 6 节实测表 |
 
-## 9. 论文未明确、由本实现确定的超参数
+## 8. 论文未明确、由本实现确定的超参数
 
 下列取值论文未给出，若审稿人追问“为什么”，可按此说明为“实现选择/经验取值”：
 
@@ -152,13 +139,13 @@ L_total  = L_total1 + L_total2
 | 编码器宽度 / 级数 | 32 / 3（共 4 级） | `base_channels`、`num_levels` |
 | 强度轴来源 | F_p 的 BT.601 亮度 | `intensity_from="prior"` |
 | 语义区域数 K | 3 | `n_regions` |
-| 损失权重 | α_s=1e−4、α_m=10、α_mse=1、α_ssim=0.1、β=1、λ_sc=0.1、λ_sa=0.05 | `config.py::LossConfig` |
+| 损失权重 | α_s=1e−4、α_m=10、α_mse=1、α_ssim=0.1、β=1、λ_sc=0.1、λ_sa=0.1 | `config.py::LossConfig` |
 | 直方图分箱 / HE 项权重 | 32 / 0.1 | `hist_bins`、`SemanticHistogramLoss.he_weight` |
 | PatchGAN 宽度与层数 | base=32，3 个下采样块 | `PatchDiscriminator(3, 32, 3)` |
 | LUT 初始化 | 恒等映射 | `QuadrilinearLUT(identity_init=True)` |
 | 局部判别器裁剪尺寸 | 64×64 | `_local_crop` |
 
-## 10. 复现命令
+## 9. 复现命令
 
 ```powershell
 cd IS-4D-LUT
@@ -181,7 +168,7 @@ python tools/compare_gt.py --ckpt checkpoints\lolv1\is4dlut_last.pth `
 python tools/benchmark.py --ckpt checkpoints\lolv1\is4dlut_last.pth --size 400x600
 ```
 
-## 11. 可直接粘贴的段落版（连贯散文）
+## 10. 可直接粘贴的段落版（连贯散文）
 
 > 实验基于 PyTorch 2.0.0（CUDA 11.8，Python 3.10），在单张 NVIDIA RTX 4060 Ti（16 GB）
 > 上完成，训练与推理均采用 FP32。数据集为 LOLv1：训练集 485 对、测试集 15 对，分辨率
@@ -206,7 +193,7 @@ python tools/benchmark.py --ckpt checkpoints\lolv1\is4dlut_last.pth --size 400x6
 > Conv3×3((f_img+f_sem)·gate+f1c+f2c)；解码端逐级上采样并与同级特征相加，末端输出 3 通道
 > 残差 Δ，最终 I_o=clip(I_r+Δ,0,1)，最终层的语义特征 y 另经 3×3 卷积与 1×1 卷积给出 K=3 个
 > 语义区域 logits。总损失为 L_total1=10⁻⁴L_s+10L_m+L_mse+0.1L_ssim 与
-> L_total2=L_recon+0.1L_sc+0.05L_sa 之和：L_s 为融合 4D LUT 沿四轴的平均绝对差，L_m 为亮度
+> L_total2=L_recon+0.1L_sc+0.1L_sa 之和：L_s 为融合 4D LUT 沿四轴的平均绝对差，L_m 为亮度
 > 沿强度轴的单调性惩罚 mean(relu(−ΔY+10⁻⁶))，L_mse、L_ssim（11×11 高斯窗，σ=1.5）作用于
 > I_r，L_recon 为 I_o 的 Charbonnier 损失（ε=10⁻³）；L_sc 在 1/4 分辨率的 3 个软语义区域上
 > 对 RGB 各通道统计 32 分箱三角核软直方图，以 Wasserstein-1 距离度量并叠加权重 0.1 的直方图

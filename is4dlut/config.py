@@ -35,7 +35,7 @@ class LossConfig:
     # L_total2 (Eq. 12)
     beta_recon: float = 1.0
     lambda_sc: float = 0.1
-    lambda_sa: float = 0.05
+    lambda_sa: float = 0.1
     # details
     hist_bins: int = 32       # bins of the differentiable histogram
     gan_type: str = "hinge"   # {"hinge", "lsgan", "vanilla"}
@@ -152,7 +152,7 @@ INFERRED_SETTINGS = {
                          "switchable to the predicted intensity image F_d.",
     "encoder width": "base_channels=32 with 3 down-sampling levels.",
     "loss weights": "alpha_s=1e-4, alpha_m=10, alpha_mse=1, alpha_ssim=0.1, beta=1, "
-                    "lambda_sc=0.1, lambda_sa=0.05 (anchored on the sweeps of Fig. 10).",
+                    "lambda_sc=0.1, lambda_sa=0.1.",
     "semantic branch": "Semantic features are produced by an internal encoder over "
                        "[I_r, I_L] (no external semantic labels / pretrained model is "
                        "specified in the paper).",

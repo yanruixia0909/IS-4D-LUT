@@ -14,7 +14,7 @@
     "alpha_ssim": 0.1,
     "beta_recon": 1.0,
     "lambda_sc": 0.1,
-    "lambda_sa": 0.05,
+    "lambda_sa": 0.1,
     "hist_bins": 16,
     "gan_type": "hinge"
   },

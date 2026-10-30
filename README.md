@@ -13,24 +13,6 @@
 
 ---
 
-## 0. 效果预览
-
-LOLv1 测试集，1 万迭代短程训练（左 → 右：**低光输入 | 本实现增强 | GT**）：
-
-<p align="center">
-  <img src="docs/assets/lolv1_compare.png" width="95%">
-</p>
-
-| 验证集（15 张，全分辨率） | PSNR | SSIM |
-|---|---|---|
-| 低光输入 | 7.77 dB | 0.1910 |
-| **IS-4D LUT（本实现）** | **17.91 dB** | **0.6855** |
-
-> 上述为 1e4 迭代的短程结果（论文为 1e5 迭代），仅用于证明数据管线与训练流程可用，
-> 不代表论文表格数值；完整配置见 [§9](#9-用-lolv1-训练实测配置) 与 `docs/experiment_setup.md`。
-
----
-
 ## 1. 方法要点 → 代码映射
 
 | 论文内容 | 公式 | 代码位置 |
@@ -126,12 +108,6 @@ python tools/demo.py --iters 5 --device cuda
 
 会在 `results/demo/` 下生成 `comparison_XX.png`（低光 / 增强 / GT 三联图）、
 `metrics.json`（每张图的 PSNR、SSIM）以及 `checkpoints/demo/is4dlut_last.pth`。
-实测（5 迭代）：
-
-```
-PSNR: 7.70 -> 14.86 dB
-SSIM: 0.2195 -> 0.6226
-```
 
 ### 4.3 在真实配对数据上训练
 
@@ -203,7 +179,7 @@ python tools/evaluate.py --ckpt checkpoints/is4dlut_last.pth `
 | 强度通道 d_in | `luminance(F_p)`（0.299/0.587/0.114） | “input intensity value”；可切换为 `F_d`（`ModelConfig.intensity_from="intensity"`） |
 | 编码器宽度 | base=32，3 次下采样 | 论文只给了示意图 |
 | 语义来源 | 内部语义编码器（输入 `[I_r, I_L]`） | 论文未说明使用外部语义标签或预训练模型 |
-| 损失权重 | α_s=1e-4、α_m=10、α_mse=1、α_ssim=0.1、β=1、λ_sc=0.1、λ_sa=0.05 | 对齐 Fig. 10 的扫描范围 |
+| 损失权重 | α_s=1e-4、α_m=10、α_mse=1、α_ssim=0.1、β=1、λ_sc=0.1、λ_sa=0.1 | 对齐 Fig. 10 的扫描范围 |
 | L_sc 实现 | 可微 soft histogram + Wasserstein-1（逐语义区域）+ 直方图均衡辅助项 | 论文描述“分区约束 + 可微直方图 + 均衡辅助” |
 | L_sa 实现 | 全局 + 局部 PatchGAN，hinge loss，语义显著性加权 | 论文只说明“局部/全局判别器 + 语义先验引导” |
 | 语义区域数 K | 3 | `ModelConfig.n_regions` |
@@ -216,15 +192,12 @@ python tools/evaluate.py --ckpt checkpoints/is4dlut_last.pth `
 |---|---|---|
 | 4D LUT 恒等插值 | `python tests/test_smoke.py` | 最大误差 **5.96e-08**（16 邻点四线性插值正确） |
 | 前向/反向 + 全部损失 | 同上 | 损失有限、梯度存在 |
-| Demo（CPU） | `tools/demo.py --iters 3 --device cpu` | 0.21 s/it；PSNR 7.70→**14.78 dB**，SSIM 0.2195→**0.6210** |
-| Demo（GPU） | `tools/demo.py --iters 5 --device cuda` | 0.12 s/it；PSNR 7.70→**14.86 dB**，SSIM 0.2195→**0.6226** |
+| Demo（CPU） | `tools/demo.py --iters 3 --device cpu` | 0.21 s/it |
+| Demo（GPU） | `tools/demo.py --iters 5 --device cuda` | 0.12 s/it |
 | 论文规模（N=33, M=3, base=32） | `tools/train.py --preset paper --synthetic --iters 1` | **29.53 M 参数**，0.69 s/it @128²（4060 Ti，AMP） |
 | 真实配对目录训练 | `tools/train.py --data-root data/synthetic_pairs ...` | 正常训练并保存 checkpoint |
-| 评估 | `tools/evaluate.py ...` | PSNR **15.135 dB**，SSIM **0.6056**（合成 6 对，2 迭代） |
+| 评估 | `tools/evaluate.py ...` | 配对数据评估与指标导出 |
 | 真实图片推理 | `tools/inference.py --input ...DICM...jpg` | 960×640 与 `--max-size 512` 均正常输出 |
-
-> 注意：Demo 只训练几迭代、且用的是合成数据，指标只用于证明“整条链路可跑通”，
-> 不代表论文 Table 1–5 的数值。
 
 ---
 
@@ -288,7 +261,7 @@ python tools/train.py --preset paper `
     --device cuda
 ```
 
-短程训练（1 万迭代，RTX 4060 Ti 上约 27 分钟）：
+短程训练示例（1 万迭代）：
 
 ```powershell
 python tools/train.py --preset paper `
@@ -327,20 +300,6 @@ python tools/train.py --preset paper `
 > 代码已把这几处强制为 fp32（卷积仍走 AMP），并加了非有限损失/梯度跳步保护；
 > 即便如此，本工作负载仍推荐直接 `--no-amp`。
 
-### LOLv1 短程训练实测结果（1 万迭代，RTX 4060 Ti 16GB）
-
-| 项目 | 数值 |
-|---|---|
-| 训练耗时 | 约 27 分钟（0.16 s/it @ 256² 随机裁剪，batch=1，fp32） |
-| 参数 / 显存 | 29.53 M / 峰值约 6.4 GB |
-| 验证集（Test，15 张） | PSNR **17.91 dB**，SSIM **0.6855**（输入 7.77 dB / 0.1910） |
-| 权重 | `checkpoints/lolv1/is4dlut_iter00{2000..10000}.pth` + `is4dlut_last.pth` |
-| 三联图 | `results/lolv1_compare_final/*_compare.png`（15 张，低光\|增强\|GT） |
-| 纯增强图 | `results/lolv1_enhanced/*_is4dlut.png`（15 张，原尺寸 400×600） |
-
-> 这只是 1 万迭代的短程结果（论文为 1e5 迭代），用于验证数据管线与训练流程；要逼近论文
-> 指标需用上面的“论文配方”跑满 1e5 迭代。
-
 ---
 
 ## 10. 论文用实验配置（可直接写进文章）
@@ -366,7 +325,7 @@ python tools/benchmark.py --ckpt checkpoints\lolv1\is4dlut_last.pth --size 400x6
 
 ## 11. 已知限制
 
-1. **未复现论文表格数值**：仓库只提供 1e4 迭代的短程结果，表格数字需按 §9 的论文配方跑满 1e5 迭代。
+1. **未复现论文全部表格结果**：本仓库提供训练与评估流程；论文表格结果需结合相应数据和第 9 节的完整训练配置另行验证。
 2. **语义分支为内部编码器**：论文未说明语义特征来源，本实现用与图像分支同构的编码器
    （输入 `[I_r, I_L]`）。若你使用分割/语义网络，只需替换 `SFM.sem_encoder` 的输出接口。
 3. **实现范围**：本仓库提供可运行的模型、训练与评估流程，尚未验证达到论文全部表格结果；具体实现差异见第 7 节。

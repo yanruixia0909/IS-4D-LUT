@@ -43,7 +43,7 @@ def test_model_forward_and_loss():
     torch.manual_seed(0)
     cfg = ModelConfig(n_grid=9, n_basis=3, base_channels=8, num_levels=2)
     model = IS4DLUT(cfg)
-    criterion = IS4DLUTLoss(LossConfig(hist_bins=16, lambda_sa=0.05))
+    criterion = IS4DLUTLoss(LossConfig(hist_bins=16, lambda_sa=0.1))
 
     low = torch.rand(1, 3, 48, 48)
     high = torch.rand(1, 3, 48, 48)
