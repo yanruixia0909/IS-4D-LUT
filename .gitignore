@@ -1,0 +1,26 @@
+# ---------- Python ----------
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# ---------- 虚拟环境 / IDE ----------
+.venv/
+venv/
+.idea/
+.vscode/
+
+# ---------- 训练产物（体积大，不入库） ----------
+checkpoints/
+results/
+*.pth
+*.log
+
+# ---------- 数据集（只保留可一键重建的合成样例，真实数据集自行下载） ----------
+data/*
+!data/synthetic_pairs/
+
+# ---------- 系统文件 ----------
+Thumbs.db
+.DS_Store

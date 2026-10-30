@@ -1,0 +1,50 @@
+{
+  "model": {
+    "n_grid": 9,
+    "n_basis": 3,
+    "base_channels": 16,
+    "num_levels": 2,
+    "intensity_from": "prior",
+    "n_regions": 3
+  },
+  "loss": {
+    "alpha_smooth": 0.0001,
+    "alpha_mono": 10.0,
+    "alpha_mse": 1.0,
+    "alpha_ssim": 0.1,
+    "beta_recon": 1.0,
+    "lambda_sc": 0.1,
+    "lambda_sa": 0.05,
+    "hist_bins": 16,
+    "gan_type": "hinge"
+  },
+  "train": {
+    "data_root": "data",
+    "out_dir": "results/demo",
+    "ckpt_dir": "checkpoints/demo",
+    "batch_size": 1,
+    "num_workers": 0,
+    "lr": 0.0001,
+    "beta1": 0.9,
+    "beta2": 0.999,
+    "weight_decay": 0.0,
+    "total_iters": 6,
+    "lr_decay_start": 50000,
+    "grad_clip": 1.0,
+    "amp": false,
+    "crop_size": 96,
+    "use_flip": true,
+    "synthetic": true,
+    "synthetic_size": 96,
+    "synthetic_train": 8,
+    "synthetic_val": 2,
+    "log_every": 1,
+    "val_every": 1000000000,
+    "save_every": 1000000000,
+    "val_root": "",
+    "val_limit": 20,
+    "n_critic": 1,
+    "seed": 0,
+    "device": "auto"
+  }
+}
